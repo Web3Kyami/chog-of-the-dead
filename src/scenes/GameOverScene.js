@@ -12,8 +12,8 @@ export default class GameOverScene extends Phaser.Scene {
   preload() {
     // Use blurred main menu bg (already in assets)
     this.load.image("bg_mainmenu_blur", "assets/ui/mainmenu/bg_mainmenu_blur.png");
-    this.load.image("btn_back", "assets/leaderboard/btn_back.png");
-    this.load.image("btn_restart", "assets/ui/mainmenu/btn_play.png"); // reuse play button for restart
+    this.load.image("btn_back", "assets/ui/mainmenu/main_replay");
+    this.load.image("btn_restart", "assets/ui/mainmenu/Replay"); 
   }
 
   create() {

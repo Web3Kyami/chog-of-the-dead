@@ -1,7 +1,7 @@
 const GameData = {
   coins: 5000,
   points: 0,
-  respawns: 0,
+  respawns: 3,
 
   maxHealth: 3,
 

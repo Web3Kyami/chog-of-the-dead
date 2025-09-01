@@ -82,6 +82,8 @@ export default class RespawnScene extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.fadeIn(300, 0, 0, 0);
+
     const map = this.cache.json.get("layout");
 
     map.layers.forEach(layer => {
@@ -110,39 +112,33 @@ export default class RespawnScene extends Phaser.Scene {
 
       // Respawn button
       if (texture === "respawn_button") {
-        sprite.setOrigin(0.5, 0.5);
-        sprite.x += sprite.displayWidth / 2;
-        sprite.y -= sprite.displayHeight / 2;
+  sprite.setInteractive({ useHandCursor: true })
+    .on("pointerdown", () => {
+      this.tweens.add({
+        targets: sprite,
+        scale: 0.9,
+        duration: 100,
+        yoyo: true,
+        ease: "Sine.easeInOut",
+        onComplete: () => {
+          this.scene.stop("UIScene");
+          this.scene.stop("LevelOneScene");
+          this.scene.stop("RespawnScene");
 
-        sprite.setInteractive({ useHandCursor: true })
-          .on("pointerdown", () => {
-            this.tweens.add({
-              targets: sprite,
-              scale: 0.9,
-              duration: 100,
-              yoyo: true,
-              ease: "Sine.easeInOut",
-              onComplete: () => {
-                this.scene.stop("UIScene");
-                this.scene.stop("LevelOneScene");
-                this.scene.stop("RespawnScene");
-
-                // Decrease lives
-                GameData.respawns -= 1;
-
-                if (GameData.respawns <= 0) {
-                  this.scene.start("GameOverScene");
-                } else {
-                  this.scene.start("LevelOneScene", {
-                    coins: GameData.coins,
-                    points: GameData.points,
-                    respawns: GameData.respawns
-                  });
-                }
-              }
+          if (GameData.respawns <= 0) {
+            this.scene.start("GameOverScene");
+          } else {
+            this.scene.start("LevelOneScene", {
+              coins: GameData.coins,
+              points: GameData.points,
+              respawns: GameData.respawns
             });
-          });
-      }
+          }
+        }
+      });
+    });
+}
+
 
       if (texture === "chog_title") {
         sprite.setOrigin(0.5, 0.5);
@@ -340,13 +336,14 @@ export default class RespawnScene extends Phaser.Scene {
     box2.fillRoundedRect(1060, 20, 130, 35, 10);
     this.pointsText = this.add.text(1080, 28, GameData.points, { fontSize: "18px", color: "#fff" });
 
-    
+    // ❤️ Hearts for lives left
     this.respawnHearts = [];
-for (let i = 0; i < GameData.respawns; i++) {
-  const heart = this.add.image(700 + i * 40, 40, "heart").setScale(1);
-  this.respawnHearts.push(heart);
-}
+    for (let i = 0; i < GameData.respawns; i++) {
+      const heart = this.add.image(700 + i * 40, 40, "heart").setScale(1);
+      this.respawnHearts.push(heart);
+    }
   }
+
   _createHelp() {
     this.helpBtn = this.add.text(30, 350, "?", {
       fontSize: "32px", color: "#fff", fontStyle: "bold", backgroundColor: "#000"

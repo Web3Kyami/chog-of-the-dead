@@ -20,7 +20,7 @@ export default class LeaderboardScene extends Phaser.Scene {
 
     // Title
     this.add.text(640, 170, "LEADERBOARD", {
-      fontSize: "42px",
+      fontSize: "35px",
       fontFamily: "'Press Start 2P', monospace",
       color: "#680c0cff",
     }).setOrigin(0.5);

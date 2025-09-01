@@ -9,17 +9,26 @@ export default class LevelOneScene extends Phaser.Scene {
   }
 
   init(data) {
-    GameData.respawns = data?.respawns ?? (GameData.respawns || 0);
-    GameData.coins    = data?.coins    ?? (GameData.coins    || 0);
-    GameData.points   = data?.points   ?? (GameData.points   || 0);
-
-    this.killCount    = 0;
-    this.spawnDelay   = 1700; // gentle start
-    this.bgSpeed      = 1.7;
-    this.isPaused     = false;
-    this.lastBossTime = 0;
-    this.testBoss     = true; // spawn one for test
+  // Only set to 3 once, if never initialized
+  if (GameData.respawns === undefined) {
+    GameData.respawns = 3;
   }
+
+  // Keep respawns passed from RespawnScene
+  if (data?.respawns !== undefined) {
+    GameData.respawns = data.respawns;
+  }
+
+  GameData.coins  = data?.coins  ?? GameData.coins  ?? 0;
+  GameData.points = data?.points ?? GameData.points ?? 0;
+
+  this.killCount    = 0;
+  this.spawnDelay   = 1700;
+  this.bgSpeed      = 1.7;
+  this.isPaused     = false;
+  this.lastBossTime = 0;
+  this.testBoss     = true;
+}
 
   preload() {
     // Background
@@ -39,12 +48,9 @@ export default class LevelOneScene extends Phaser.Scene {
     // Effects
     this.load.image("explosion", "assets/effects/explosion.png");
 
-    
     this.load.audio("bgm_level", "assets/sounds/bgm_level.mp3");
     this.load.audio("shoot", "assets/sounds/shoot.wav");
     this.load.audio("explosion_sfx", "assets/sounds/explosion.wav");
-
-    
 
     // Chog + weapons
     this.load.spritesheet("chog_ak", "assets/characters/chog_spritesheet.png",
@@ -68,26 +74,22 @@ export default class LevelOneScene extends Phaser.Scene {
   }
 
   create() {
-this.sound.context.resume();
+    this.cameras.main.fadeIn(300, 0, 0, 0);
 
-this.bgm = this.sound.add("bgm_level", { loop: true, volume: 0.5 });
-this.sound.context.resume();   // ✅ fix autoplay block
-this.bgm.play();
-
+    this.sound.context.resume();
+    this.bgm = this.sound.add("bgm_level", { loop: true, volume: 0.5 });
+    this.sound.context.resume();   // ✅ fix autoplay block
+    this.bgm.play();
 
     // Background
     this.background = this.add.tileSprite(
       0, 0, this.sys.game.config.width, this.sys.game.config.height, "road"
     ).setOrigin(0, 0);
 
-
-
-
-// In scene shutdown/transition
-this.events.on("shutdown", () => {
-  if (this.bgm) this.bgm.stop();
-});
-
+    // In scene shutdown/transition
+    this.events.on("shutdown", () => {
+      if (this.bgm) this.bgm.stop();
+    });
 
     // Player
     this.player = new Chog(this, 120, 550).setScale(0.7);
@@ -175,9 +177,8 @@ this.events.on("shutdown", () => {
 
       let dmg = 1;
       if (proj.projType === "arrow")  dmg = 2;
-      if (proj.projType === "rocket") dmg = 25; // unified rocket dmg
+      if (proj.projType === "rocket") dmg = 25;
 
-      // Arrow pierce
       if (proj.projType === "arrow") {
         zombie.takeDamage(dmg);
         if (zombie.type === "boss") this._rewardBossHit(zombie, dmg);
@@ -188,7 +189,6 @@ this.events.on("shutdown", () => {
         return;
       }
 
-      // Rocket AoE (use same dmg = 25)
       if (proj.projType === "rocket") {
         proj.onHit?.();
         this.cameras.main.shake(300, 0.02);
@@ -203,7 +203,6 @@ this.events.on("shutdown", () => {
         return;
       }
 
-      // Bullet
       proj.disableBody(true, true);
       zombie.takeDamage(dmg);
       if (zombie.type === "boss") this._rewardBossHit(zombie, dmg);
@@ -213,17 +212,15 @@ this.events.on("shutdown", () => {
     // Player vs Zombie
     this.physics.add.overlap(this.player, this.zombies, (player, zombie) => {
       if (!zombie.active) return;
-if (zombie.type !== "boss") {
-  zombie.disableBody(true, true);
-}
-
+      if (zombie.type !== "boss") {
+        zombie.disableBody(true, true);
+      }
 
       const noUpgrades =
         GameData.upgrades.ak.length === 0 &&
         GameData.upgrades.arrow.length === 0 &&
         GameData.upgrades.bazooka.length === 0;
 
-      // Boss: instant death if no upgrades
       if (zombie.type === "boss" && noUpgrades) {
         if (zombie.healthBar) zombie.healthBar.destroy();
         this.scene.stop("UIScene");
@@ -236,21 +233,33 @@ if (zombie.type !== "boss") {
       }
 
       const dead = this.player.takeDamage(1);
-      if (dead) {
-  if (GameData.points > GameData.highScore) {
+if (dead) {
+  if (GameData.points > (GameData.highScore || 0)) {
     GameData.highScore = GameData.points;
   }
-  this.scene.stop("UIScene");
-  this.scene.start("RespawnScene", {
-    coins: GameData.coins,
-    points: GameData.points,
-    respawns: GameData.respawns
+
+  // Lose a life
+  GameData.respawns -= 1;
+
+  this.cameras.main.fadeOut(300, 0, 0, 0);
+  this.cameras.main.once("camerafadeoutcomplete", () => {
+    this.scene.stop("UIScene");
+
+    if (GameData.respawns > 0) {
+      // still have lives → respawn
+      this.scene.start("RespawnScene", {
+        coins: GameData.coins,
+        points: GameData.points,
+        respawns: GameData.respawns
+      });
+    } else {
+      // no lives → game over
+      this.scene.start("GameOverScene");
+    }
   });
 }
 
     });
-
-  
   }
 
   togglePause() {
@@ -266,14 +275,6 @@ if (zombie.type !== "boss") {
       this.spawnTimer.paused = false;
       this.anims.resumeAll();
       this.scene.resume("UIScene");
-      this.scene.pause("LevelOneScene");
-this.scene.launch("PauseScene");   // if you have PauseScene
-
-// 🔊 stop music
-if (this.scene.get("LevelOneScene").bgm) {
-  this.scene.get("LevelOneScene").bgm.pause();
-}
-
     }
   }
 
@@ -290,10 +291,9 @@ if (this.scene.get("LevelOneScene").bgm) {
       const isBoss = (GameData.points >= 1500 && Phaser.Math.Between(0, 100) < 6);
 
       if (isBoss) {
-        if (this.time.now - this.lastBossTime < 60000) return; // cooldown
+        if (this.time.now - this.lastBossTime < 60000) return;
         this.lastBossTime = this.time.now;
 
-        // NEW boss (no more scaled normal)
         const boss = new Zombie(this, xSpawn, 500, "zombie_boss");
         boss.play("zombie_boss_walk");
         boss.setScale(1.2);
@@ -360,17 +360,14 @@ if (this.scene.get("LevelOneScene").bgm) {
   }
 
   _applyUpgradesToPlayer() {
-    // Health
     this.player.maxHealth = GameData.maxHealth || 3;
     this.player.health    = this.player.maxHealth;
 
-    // Active weapon sync
     this.player.weapon = this.activeWeapon;
     if (this.activeWeapon === "arrow")   this.player.setTexture("chog_arrow_idle");
     if (this.activeWeapon === "bazooka") this.player.setTexture("chog_bazooka_shoot");
     if (this.activeWeapon === "ak")      this.player.setTexture("chog_ak");
 
-    // --- AK clip + fire rate ---
     const akSet = GameData.upgrades.ak || [];
     let akClip = 35;
     if (akSet.includes("ak47_bullets_100")) akClip = 100;
@@ -388,7 +385,6 @@ if (this.scene.get("LevelOneScene").bgm) {
     this.player.bulletsInClip = akClip;
     this.player.fireRate      = Math.max(90, 140 - akLevel * 10);
 
-    // --- Arrow ---
     const arSet = GameData.upgrades.arrow || [];
     let arrowAmmo = 0;
     if (GameData.ownedWeapons.arrow) {
@@ -407,7 +403,6 @@ if (this.scene.get("LevelOneScene").bgm) {
     this.player.arrowAmmo     = arrowAmmo;
     this.player.arrowReloadMs = Math.max(550, 900 - arLevel * 100);
 
-    // --- Rocket ---
     const rkSet = GameData.upgrades.bazooka || [];
     let rocketAmmo = 0;
     if (GameData.ownedWeapons.bazooka) {
@@ -426,7 +421,6 @@ if (this.scene.get("LevelOneScene").bgm) {
     this.player.rocketAmmo     = rocketAmmo;
     this.player.rocketReloadMs = Math.max(900, 1500 - rkLevel * 150);
 
-    // Safe emits to UI
     if (this.activeWeapon === "ak") {
       this.events.emit("bulletChanged", this.player.bulletsInClip || 0, this.player.clipSize || 0, "ak");
     } else if (this.activeWeapon === "arrow") {
@@ -458,7 +452,6 @@ if (this.scene.get("LevelOneScene").bgm) {
         }
       });
 
-      // Update boss bars
       this.zombies.children.iterate(z => {
         if (z?.active && z.type === "boss" && z.updateHealthBar) z.updateHealthBar();
       });
