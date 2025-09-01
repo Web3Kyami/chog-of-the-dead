@@ -9,16 +9,28 @@ export default class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     this.type = type;
 
-    if (type === "boss") {
-      this.setScale(1.2);
-      this.y += 5; // push boss down to ground
-      this.speed = Phaser.Math.Between(70, 90);
-      this.hp = 20;
-    } else {
-      this.setScale(1.2);
-      this.speed = Phaser.Math.Between(50, 70);
-      this.hp = 2;
-    }
+   // 🚶 Base speed starts slower
+if (type === "boss") {
+  this.setScale(1.2);
+  this.y += 5;
+  this.baseSpeed = Phaser.Math.Between(80, 120);  // slower boss base
+  this.hp = 50;
+} else {
+  this.setScale(1.2);
+  this.baseSpeed = Phaser.Math.Between(100, 140); // slower normal base
+  this.hp = 2;
+}
+
+// 🕒 Difficulty grows gently (every 30s adds speed, but capped)
+const elapsedMinutes = scene.time.now / 60000;
+const difficultyFactor = Math.min(elapsedMinutes / 3, 1); 
+// grows from 0 → 1 over 3 minutes
+
+this.speed = this.baseSpeed + (difficultyFactor * 80); 
+// +80 max extra, spread across ~3 minutes
+
+
+
 
     this.play(type === "boss" ? "zombie_boss_walk" : "zombie_run");
   }

@@ -159,12 +159,21 @@ export default class LevelOneScene extends Phaser.Scene {
     // Groups
     this.zombies = this.physics.add.group();
 
-    // Spawn loop
-    this.spawnTimer = this.time.addEvent({
-      delay: this.spawnDelay,
-      loop: true,
-      callback: () => this.spawnZombie(),
-    });
+    
+    // Spawn loop (random groups instead of 1-by-1)
+this.spawnTimer = this.time.addEvent({
+  delay: Phaser.Math.Between(800, 1100),  // random interval between spawns
+  loop: true,
+  callback: () => {
+    const groupCount = Phaser.Math.Between(1, 3); 
+    for (let i = 0; i < groupCount; i++) {
+      this.spawnZombie();
+    }
+    // reset next delay dynamically
+    this.spawnTimer.delay = Phaser.Math.Between(800, 1100);
+  }
+});
+
 
     // Shooting + switch
     this.input.on("pointerdown", () => this.player.shoot(this.time.now));
