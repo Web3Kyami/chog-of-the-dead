@@ -55,9 +55,20 @@ export default class MainMenuScene extends Phaser.Scene {
 
     // ▶️ Play button
     this.createButton(640, 440, "btn_play", () => {
-      if (this.bgm) this.bgm.stop();
-      this.scene.start("LevelOneScene");
-    }, true);
+  if (this.bgm) this.bgm.stop();
+
+  // RESET game state
+  GameData.coins = 5000;
+  GameData.points = 0;
+  GameData.respawns = 3;
+  GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
+  GameData.activeWeapon = "ak";
+  GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
+  GameData.maxHealth = 3;
+
+  this.scene.start("LevelOneScene");
+}, true);
+
 
     // 🔑 Login button
     // Inside create()

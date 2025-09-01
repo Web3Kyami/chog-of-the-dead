@@ -12,7 +12,7 @@ export default class GameOverScene extends Phaser.Scene {
   preload() {
     // Use blurred main menu bg (already in assets)
     this.load.image("bg_mainmenu_blur", "assets/ui/mainmenu/bg_mainmenu_blur.png");
-    this.load.image("btn_back", "assets/ui/mainmenu/main_replay.png");
+    this.load.image("btn_mainnu", "assets/ui/mainmenu/main_replay.png");
     this.load.image("btn_restart", "assets/ui/mainmenu/Replay.png"); 
   }
 
@@ -55,16 +55,30 @@ export default class GameOverScene extends Phaser.Scene {
     // Restart button
     const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
     restartBtn.on("pointerdown", () => {
-      // reset respawns + start fresh
-      GameData.respawns = 2;
-      GameData.points = 0;
-      this.scene.start("LevelOneScene");
-    });
+  // 🔄 Reset full GameData (except highscore & username/wallet)
+  GameData.coins = 5000;
+  GameData.points = 0;
+  GameData.respawns = 3;
+  GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
+  GameData.activeWeapon = "ak";
+  GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
+  GameData.maxHealth = 3;
 
+  this.scene.start("LevelOneScene");
+});
     // Back to menu button
-    const backBtn = this.add.image(640, 560, "btn_back").setInteractive({ useHandCursor: true });
+    const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
     backBtn.on("pointerdown", () => {
-      this.scene.start("MainMenuScene");
-    });
+  // Reset game state on return to menu
+  GameData.coins = 5000;
+  GameData.points = 0;
+  GameData.respawns = 3;
+  GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
+  GameData.activeWeapon = "ak";
+  GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
+  GameData.maxHealth = 3;
+
+  this.scene.start("MainMenuScene");
+});
   }
 }
