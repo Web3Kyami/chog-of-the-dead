@@ -1,6 +1,9 @@
+// src/main.js
 import Phaser from "phaser";
-import GameData from "./GameData.js";
 import { initPrivy } from "./auth/privy.js";
+
+// Import game state
+import GameData from "./GameData.js";
 
 // Import all scenes
 import MainMenuScene from "./scenes/MainMenuScene.js";
@@ -14,14 +17,15 @@ window.onload = function () {
   // ✅ Initialize Privy first
   initPrivy();
 
-  // ✅ Then set up Phaser
+  // ✅ Set up Phaser game
   const config = {
     type: Phaser.AUTO,
     width: 1280,
     height: 720,
+    backgroundColor: "#000000",
     physics: {
       default: "arcade",
-      arcade: { debug: false }
+      arcade: { debug: false },
     },
     scene: [
       MainMenuScene,
@@ -29,14 +33,17 @@ window.onload = function () {
       RespawnScene,
       UIScene,
       LeaderboardScene,
-      GameOverScene
+      GameOverScene,
     ],
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH
-    }
+      mode: Phaser.Scale.FIT,          // ✅ scales to fit any screen
+      autoCenter: Phaser.Scale.CENTER_BOTH, // ✅ center on screen
+    },
+    render: {
+      pixelArt: true, // ✅ crisp pixels for retro look
+      antialias: false,
+    },
   };
 
-  // ✅ Launch game after Privy init
   new Phaser.Game(config);
 };

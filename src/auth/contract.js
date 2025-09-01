@@ -1,42 +1,37 @@
-import { createPublicClient, createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { monadTestnet } from "./monad.js";
+// src/auth/onchain.js
+import { ethers } from "ethers";
 
 const CONTRACT_ADDRESS = "0xceCBFF203C8B6044F52CE23D914A1bfD997541A4";
-
 const ABI = [
-  {
-    "inputs": [
-      { "internalType": "address", "name": "player", "type": "address" },
-      { "internalType": "uint256", "name": "scoreAmount", "type": "uint256" },
-      { "internalType": "uint256", "name": "transactionAmount", "type": "uint256" }
-    ],
-    "name": "updatePlayerData",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
+  "function updatePlayerData(address player, uint256 scoreAmount, uint256 transactionAmount) external"
 ];
 
-const client = createPublicClient({
-  chain: monadTestnet,
-  transport: http()
-});
+// track last submitted score locally
+let lastSubmittedScore = 0;
 
-// ⚠️ For demo only, NEVER hardcode private keys in frontend!
-const account = privateKeyToAccount("0xa1a34f08298fca27f948f20336572a84d33d50d487452b4bc3be6b0cd06dd61d");
+export async function submitScore(wallet, score) {
+  if (!wallet || !window.ethereum) {
+    console.error("No wallet or provider found");
+    return;
+  }
 
-const walletClient = createWalletClient({
-  account,
-  chain: monadTestnet,
-  transport: http()
-});
+  const increment = score - lastSubmittedScore;
+  if (increment <= 0) {
+    console.log("⚠️ No new score to submit");
+    return;
+  }
 
-export async function submitScore(player, score) {
-  return await walletClient.writeContract({
-    address: CONTRACT_ADDRESS,
-    abi: ABI,
-    functionName: "updatePlayerData",
-    args: [player, BigInt(score), 0n],
-  });
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+    const tx = await contract.updatePlayerData(wallet, increment, 0);
+    await tx.wait();
+
+    console.log("✅ Onchain score submitted:", increment, "total:", score);
+    lastSubmittedScore = score; // update tracker
+  } catch (err) {
+    console.error("❌ Failed to submit score:", err);
+  }
 }

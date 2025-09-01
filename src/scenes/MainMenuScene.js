@@ -56,6 +56,18 @@ export default class MainMenuScene extends Phaser.Scene {
     // ▶️ Play button
     this.createButton(640, 440, "btn_play", () => {
   if (this.bgm) this.bgm.stop();
+  
+  this.createButton(640, 440, "btn_play", () => {
+  if (!GameData.user || !GameData.user.loggedIn) {
+    this.add.text(640, 500, "⚠️ Please log in first!", {
+      fontSize: "18px",
+      color: "#f00"
+    }).setOrigin(0.5);
+    return;
+  }
+  if (this.bgm) this.bgm.stop();
+  this.scene.start("LevelOneScene");
+}, true);
 
   // RESET game state
   GameData.coins = 5000;

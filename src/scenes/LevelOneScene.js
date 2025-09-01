@@ -225,7 +225,13 @@
         if (zombie.type !== "boss") {
           zombie.disableBody(true, true);
         }
-
+        // --- NEW: require 2 zombies to cause damage ---
+  if (!this.zombieHitCount) this.zombieHitCount = 0;
+  this.zombieHitCount++;
+  if (this.zombieHitCount < 2) {
+    return; // ignore until 2nd zombie
+  }
+  this.zombieHitCount = 0;
         const noUpgrades =
           GameData.upgrades.ak.length === 0 &&
           GameData.upgrades.arrow.length === 0 &&
