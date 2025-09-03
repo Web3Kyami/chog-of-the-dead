@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import GameData from "../GameData.js";
-import { loginWithMonadID } from "../auth/privy.js"; // ✅ only this
+import { resetRun } from "../GameData.js";
+import { saveGameData } from "../storage.js";
+import { submitScore } from "../auth/onchain.js";
+import { loginWithMonadID } from "../auth/privy.js";
 
 export default class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -10,7 +13,6 @@ export default class MainMenuScene extends Phaser.Scene {
   }
 
   preload() {
-    // Main menu art
     this.load.image("bg_mainmenu", "assets/ui/mainmenu/bg_mainmenu.png");
     this.load.image("title", "assets/ui/mainmenu/title.png");
     this.load.image("btn_play", "assets/ui/mainmenu/btn_play.png");
@@ -22,26 +24,21 @@ export default class MainMenuScene extends Phaser.Scene {
     this.load.image("chog_character", "assets/ui/mainmenu/chog_character.png");
     this.load.image("zombie_character", "assets/ui/mainmenu/zombie_character.png");
 
-    // How-to popup art
     this.load.image("howto_bg", "assets/ui/howto/howto_bg.png");
     this.load.image("btn_close", "assets/ui/howto/btn_close.png");
 
-    // Audio
     this.load.audio("bgm_menu", "assets/sounds/bgm_menu.mp3");
   }
 
   create() {
     this.sound.context.resume();
 
-    // Background + title
     this.add.image(640, 360, "bg_mainmenu");
     this.add.image(640, 230, "title").setOrigin(0.5);
 
-    // BGM
     this.bgm = this.sound.add("bgm_menu", { loop: true, volume: 0.5 });
     this.bgm.play();
 
-    // High score label
     this.highScoreText = this.add.text(
       640,
       60,
@@ -49,77 +46,59 @@ export default class MainMenuScene extends Phaser.Scene {
       { fontSize: "28px", fontFamily: "Montserrat", color: "#000000" }
     ).setOrigin(0.5);
 
-    // Characters
     this.add.image(280, 520, "chog_character").setOrigin(0.5);
     this.add.image(1060, 520, "zombie_character").setOrigin(0.5);
 
     // ▶️ Play button
     this.createButton(640, 440, "btn_play", () => {
   if (this.bgm) this.bgm.stop();
-  
-  this.createButton(640, 440, "btn_play", () => {
+
   if (!GameData.user || !GameData.user.loggedIn) {
     this.add.text(640, 500, "⚠️ Please log in first!", {
-      fontSize: "18px",
-      color: "#f00"
+      fontSize: "18px", color: "#f00"
     }).setOrigin(0.5);
     return;
   }
-  if (this.bgm) this.bgm.stop();
-  this.scene.start("LevelOneScene");
-}, true);
 
-  // RESET game state
-  GameData.coins = 5000;
-  GameData.points = 0;
-  GameData.respawns = 3;
-  GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
-  GameData.activeWeapon = "ak";
-  GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
-  GameData.maxHealth = 3;
+  resetRun(); 
 
   this.scene.start("LevelOneScene");
 }, true);
-
 
     // 🔑 Login button
-    // Inside create()
-this.createButton(640, 520, "btn_login", async () => {
-  if (!window.privyLogin) {
-    console.error("Privy not ready");
-    return;
-  }
-
-  await window.privyLogin();
-  const user = window.privyUser?.();
-
-  if (user) {
-    // ✅ Save username (or wallet address if no username)
-    const username = user.username || user.wallet?.address?.slice(0, 8);
-    this.add.text(640, 620, `Welcome, ${username}`, {
-      fontSize: "22px", color: "#000",
-    }).setOrigin(0.5);
-
-    // ✅ Store in GameData
-    GameData.user = { 
-      wallet: user.wallet?.address, 
-      username, 
-      loggedIn: true 
-    };
-
-    // ✅ Save immediately so it persists
-    if (typeof saveGameData === "function") saveGameData();
-
-    // ✅ Submit score onchain (starts with 0 if new)
-    if (GameData.points > 0) {
-      try {
-        await submitScore(GameData.user.wallet, GameData.points);
-      } catch (err) {
-        console.error("Onchain score submission failed:", err);
+    this.createButton(640, 520, "btn_login", async () => {
+      if (!window.privyLogin) {
+        console.error("Privy not ready");
+        return;
       }
-    }
-  }
-});
+
+      await window.privyLogin();
+      const user = window.privyUser?.();
+
+      if (user) {
+        const username = user.username || user.wallet?.address?.slice(0, 8);
+
+        this.add.text(640, 620, `Welcome, ${username}`, {
+          fontSize: "22px", color: "#000",
+        }).setOrigin(0.5);
+
+        GameData.user = { 
+          wallet: user.wallet?.address, 
+          username, 
+          loggedIn: true 
+        };
+
+        if (typeof saveGameData === "function") saveGameData();
+
+        if (GameData.points > 0) {
+          try {
+            await submitScore(GameData.user.wallet, GameData.points);
+          } catch (err) {
+            console.error("Onchain score submission failed:", err);
+          }
+        }
+      }
+    });
 
     // 📜 Leaderboard button
     this.createButton(1150, 60, "btn_leaderboard", () => {
@@ -144,7 +123,6 @@ this.createButton(640, 520, "btn_login", async () => {
     });
   }
 
-  // Reusable button helper
   createButton(x, y, key, callback, pulse = false) {
     const btn = this.add.image(x, y, key).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -170,13 +148,22 @@ this.createButton(640, 520, "btn_login", async () => {
     return btn;
   }
 
-  // Popup for How To Play
   showHowToPopup() {
     const overlay = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7);
     const popup = this.add.image(640, 360, "howto_bg").setOrigin(0.5);
     const text = this.add.text(640, 360,
-      "HOW TO PLAY:\n- Move with arrows/WASD\n- Shoot with SPACE / click\n- Switch weapon: ↑\n- Survive!",
-      { fontSize: "24px", color: "#000000", align: "center", wordWrap: { width: 600 } }
+      "HOW TO PLAY:\n\n" +
+      "- Move left/right: Arrow keys or A / D\n" +
+      "- Shoot: SPACE or mouse click\n" +
+      "- Switch weapon: UP key\n" +
+      "- Kill zombies to earn coins and points\n" +
+      "- Use coins to buy new weapons and upgrades\n" +
+      "- Respawn up to 3 times when you die\n" +
+      "- After 3 deaths, the game ends\n\n" +
+      "Special Feature:\n" +
+      "- The Respawn Shop lets you continue your run with upgrades.\n" +
+      "- Your progress (weapons & upgrades) carries into each life.",
+      { fontSize: "22px", color: "#000000", fontFamily: "Montserrat", align: "center", wordWrap: { width: 600 } }
     ).setOrigin(0.5);
 
     const closeBtn = this.add.image(970, 200, "btn_close").setInteractive();

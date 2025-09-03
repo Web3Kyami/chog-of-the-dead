@@ -3,6 +3,7 @@ import GameData from "../GameData.js";
 import { saveGameData } from "../storage.js";
 import { submitScore } from "../auth/onchain.js";
 import { recordScore } from "../leaderboard.js";
+import { resetRun } from "../GameData.js";
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -16,7 +17,8 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(640, 360, "bg_mainmenu_blur");
+    const finalScore = GameData.points || 0;
+        this.add.image(640, 360, "bg_mainmenu_blur");
 
     this.add.text(640, 200, "GAME OVER", {
       fontSize: "72px",
@@ -34,44 +36,50 @@ export default class GameOverScene extends Phaser.Scene {
       strokeThickness: 6,
     }).setOrigin(0.5);
 
-    // ✅ Save + submit async
-    (async () => {
-      recordScore(GameData.user?.username);
-      if (GameData.user?.wallet) {
-        try {
-          await submitScore(GameData.user.wallet, GameData.points);
-        } catch (err) {
-          console.error("❌ Onchain submit failed:", err);
-        }
-      }
-      saveGameData();
-    })();
+    // ✅ show final score before reset
 
-    this.add.text(640, 350, `Score: ${GameData.points}`, {
+    this.add.text(640, 350, `Score: ${finalScore}`, {
       fontSize: "28px",
       fontFamily: "Montserrat",
       color: "#ffff00",
     }).setOrigin(0.5);
 
-    const resetData = () => {
-      GameData.coins = 5000;
-      GameData.points = 0;
-      GameData.respawns = 3;
-      GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
-      GameData.activeWeapon = "ak";
-      GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
-      GameData.maxHealth = 3;
-    };
+    
+    // ✅ Save + submit async, then reset
+    (async () => {
+  recordScore(GameData.user?.username, finalScore);
+
+  if (GameData.user?.wallet) {
+    try {
+      await submitScore(GameData.user.wallet, finalScore);
+    } catch (err) {
+      console.error("❌ Onchain submit failed:", err);
+    }
+  }
+
+  if (finalScore > (GameData.highScore || 0)) {
+    GameData.highScore = finalScore;
+  }
+
+  saveGameData();
+  resetRun();       // reset AFTER saving score
+  saveGameData();   // persist reset state
+})();
+
 
     const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
     restartBtn.on("pointerdown", () => {
-      resetData();
+      resetRun();
+  saveGameData();
+  startRun();
       this.scene.start("LevelOneScene");
     });
 
     const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
     backBtn.on("pointerdown", () => {
-      resetData();
+      resetRun();
+  saveGameData();
+  startRun();
       this.scene.start("MainMenuScene");
     });
   }

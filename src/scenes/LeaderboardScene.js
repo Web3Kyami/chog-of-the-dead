@@ -77,13 +77,13 @@ export default class LeaderboardScene extends Phaser.Scene {
           color: "#000000"
         }).setOrigin(0, 0);
 
-        const nameTxt = this.add.text(-200, i * 40, entry.username, {
+        const nameTxt = this.add.text(-210, i * 40, entry.username, {
           fontSize: "28px",
           fontFamily: "Montserrat",
           color: "#000000"
         }).setOrigin(0, 0);
 
-        const scoreTxt = this.add.text(200, i * 40, entry.score.toString(), {
+        const scoreTxt = this.add.text(210, i * 40, entry.score.toString(), {
           fontSize: "28px",
           fontFamily: "Montserrat",
           color: "#000000"

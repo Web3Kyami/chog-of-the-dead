@@ -5,32 +5,19 @@ export default class RespawnScene extends Phaser.Scene {
   constructor() {
     super("RespawnScene");
 
-    // Reset coins/points only on very first game run
-    if (!GameData._initialized) {
-      GameData.coins = 5000;
-      GameData.points = 0;
-      GameData.respawns = 3; // start with 3 lives
-      GameData._initialized = true;
-    }
-
-    // 🔹 Persisted values (safer defaults)
+    // ✅ DO NOT reset anything here (we only display and let the player resume)
     GameData.coins    = (GameData.coins   !== undefined) ? GameData.coins   : 5000;
     GameData.points   = (GameData.points  !== undefined) ? GameData.points  : 0;
     GameData.respawns = (GameData.respawns!== undefined) ? GameData.respawns: 3;
 
-    // 🔹 Owned weapons & active weapon
     GameData.ownedWeapons = GameData.ownedWeapons || { ak: true, arrow: false, bazooka: false };
     GameData.activeWeapon = GameData.activeWeapon || "ak";
     this.activeWeapon = GameData.activeWeapon;
 
-    // 🔹 Upgrades & health baseline
-    GameData.upgrades = GameData.upgrades || { ak: [], arrow: [], bazooka: [], health: [] };
+    GameData.upgrades  = GameData.upgrades || { ak: [], arrow: [], bazooka: [], health: [] };
     GameData.maxHealth = GameData.maxHealth || 3;
 
-    // 🔹 Local UI state
     this.ticks = { ak: [], arrow: [], bazooka: [], health: [] };
-
-    // Upgrade sprite groups
     this.akUpgrades = [];
     this.arrowUpgrades = [];
     this.bazookaUpgrades = [];
@@ -39,17 +26,16 @@ export default class RespawnScene extends Phaser.Scene {
 
   preload() {
     this.load.json("layout", "layout.json");
-
-    // --- UI ---
+    // UI
     this.load.image("bg_layer", "assets/respawn-assets/ui/bg_layer.png");
     this.load.image("chog_title", "assets/respawn-assets/ui/chog_title.png");
     this.load.image("respawn_button", "assets/respawn-assets/ui/respawn_button.png");
 
-    // --- Zombies ---
+    // Zombies
     this.load.image("falling_zombie", "assets/respawn-assets/zombies/falling_zombie.png");
     this.load.image("background_zombies", "assets/respawn-assets/zombies/background_zombies.png");
 
-    // --- Weapons ---
+    // Weapons
     this.load.image("ak47_bullets_35", "assets/respawn-assets/weapons/ak47/bullets_35.png");
     this.load.image("ak47_bullets_50", "assets/respawn-assets/weapons/ak47/bullets_50.png");
     this.load.image("ak47_bullets_75", "assets/respawn-assets/weapons/ak47/bullets_75.png");
@@ -68,30 +54,26 @@ export default class RespawnScene extends Phaser.Scene {
     this.load.image("rocket_100","assets/respawn-assets/weapons/bazooka/rockets_100.png");
     this.load.image("icon_bazooka", "assets/respawn-assets/weapons/bazooka/icon.png");
 
-    // --- Health ---
+    // Health
     this.load.image("hits_3", "assets/respawn-assets/health/hits_3.png");
     this.load.image("hits_4", "assets/respawn-assets/health/hits_4.png");
     this.load.image("hits_5", "assets/respawn-assets/health/hits_5.png");
     this.load.image("hits_6", "assets/respawn-assets/health/hits_6.png");
 
-    // --- Extra UI ---
+    // Extra UI
     this.load.image("coin_icon", "assets/ui/coin.png");
     this.load.image("help_icon", "assets/ui/help.png");
     this.load.image("tick", "assets/ui/tick.png");
-    this.load.image("heart", "assets/ui/heart.webp"); // ✅ hearts
+    this.load.image("heart", "assets/ui/heart.webp");
   }
 
   create() {
     this.cameras.main.fadeIn(300, 0, 0, 0);
 
     const map = this.cache.json.get("layout");
-
     map.layers.forEach(layer => {
-      if (layer.type === "group") {
-        layer.layers.forEach(subLayer => this._spawnObjects(subLayer));
-      } else if (layer.type === "objectgroup") {
-        this._spawnObjects(layer);
-      }
+      if (layer.type === "group") layer.layers.forEach(subLayer => this._spawnObjects(subLayer));
+      else if (layer.type === "objectgroup") this._spawnObjects(layer);
     });
 
     this._createHUD();
@@ -112,33 +94,25 @@ export default class RespawnScene extends Phaser.Scene {
 
       // Respawn button
       if (texture === "respawn_button") {
-  sprite.setInteractive({ useHandCursor: true })
-    .on("pointerdown", () => {
-      this.tweens.add({
-        targets: sprite,
-        scale: 0.9,
-        duration: 100,
-        yoyo: true,
-        ease: "Sine.easeInOut",
-        onComplete: () => {
-          this.scene.stop("UIScene");
-          this.scene.stop("LevelOneScene");
-          this.scene.stop("RespawnScene");
-
-          if (GameData.respawns <= 0) {
-            this.scene.start("GameOverScene");
-          } else {
-            this.scene.start("LevelOneScene", {
-              coins: GameData.coins,
-              points: GameData.points,
-              respawns: GameData.respawns
-            });
-          }
-        }
-      });
-    });
-}
-
+        sprite.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+          this.tweens.add({
+            targets: sprite,
+            scale: 0.9,
+            duration: 100,
+            yoyo: true,
+            ease: "Sine.easeInOut",
+            onComplete: () => {
+              // Go back to the level with current points/coins and remaining lives
+              this.scene.stop("RespawnScene");
+              this.scene.start("LevelOneScene", {
+                coins: GameData.coins,
+                points: GameData.points,
+                respawns: GameData.respawns
+              });
+            }
+          });
+        });
+      }
 
       if (texture === "chog_title") {
         sprite.setOrigin(0.5, 0.5);
@@ -156,10 +130,7 @@ export default class RespawnScene extends Phaser.Scene {
       if (texture === "falling_zombie") {
         sprite.y = -200;
         this.tweens.add({
-          targets: sprite,
-          y: obj.y,
-          duration: 1200,
-          ease: "Bounce.easeOut"
+          targets: sprite, y: obj.y, duration: 1200, ease: "Bounce.easeOut"
         });
       }
 
@@ -208,23 +179,19 @@ export default class RespawnScene extends Phaser.Scene {
         GameData.ownedWeapons.arrow = true;
         if (this.arrowCostText) this.arrowCostText.setVisible(false);
       }
-      if (GameData.ownedWeapons.arrow) {
-        this.activeWeapon = GameData.activeWeapon = "arrow";
-      }
+      if (GameData.ownedWeapons.arrow) this.activeWeapon = GameData.activeWeapon = "arrow";
     } else if (tex === "icon_bazooka") {
       if (!GameData.ownedWeapons.bazooka && GameData.coins >= 1000) {
         GameData.coins -= 1000;
         GameData.ownedWeapons.bazooka = true;
         if (this.bazookaCostText) this.bazookaCostText.setVisible(false);
       }
-      if (GameData.ownedWeapons.bazooka) {
-        this.activeWeapon = GameData.activeWeapon = "bazooka";
-      }
+      if (GameData.ownedWeapons.bazooka) this.activeWeapon = GameData.activeWeapon = "bazooka";
     } else if (tex === "icon_ak47") {
       this.activeWeapon = GameData.activeWeapon = "ak";
     }
 
-    this.coinText.setText(GameData.coins);
+    this.coinText?.setText(GameData.coins);
     this._updateWeaponVisibility();
   }
 
@@ -282,7 +249,7 @@ export default class RespawnScene extends Phaser.Scene {
     this.bazookaUpgrades.forEach(b => b.setVisible(this.activeWeapon === "bazooka" && GameData.ownedWeapons.bazooka));
     this.healthUpgrades.forEach(b => b.setVisible(true));
 
-    // ✅ Dim lower tiers if higher bought
+    // dim lower tiers if higher bought
     const hideLower = (list, owned) => {
       let maxLevel = 0;
       list.forEach(s => {
@@ -300,28 +267,18 @@ export default class RespawnScene extends Phaser.Scene {
     hideLower(this.arrowUpgrades, "arrow");
     hideLower(this.bazookaUpgrades, "bazooka");
 
-    // 🔹 Health upgrades stack like weapons
+    // Health tiers
     const healthMap = { "hits_3": 3, "hits_4": 4, "hits_5": 5, "hits_6": 6 };
     let maxHealth = GameData.maxHealth || 3;
     this.healthUpgrades.forEach(s => {
       const val = healthMap[s.textureKey] || 0;
-      if (val < maxHealth) {
-        s.setAlpha(0.2).disableInteractive();
-      }
+      if (val < maxHealth) s.setAlpha(0.2).disableInteractive();
     });
 
-    // Weapon icons
+    // Icons
     if (this.icon_ak47Btn)    this.icon_ak47Btn.setAlpha(this.activeWeapon === "ak" ? 1 : 0.4);
     if (this.icon_arrowBtn)   this.icon_arrowBtn.setAlpha(GameData.ownedWeapons.arrow ? (this.activeWeapon === "arrow" ? 1 : 0.4) : 0.2);
     if (this.icon_bazookaBtn) this.icon_bazookaBtn.setAlpha(GameData.ownedWeapons.bazooka ? (this.activeWeapon === "bazooka" ? 1 : 0.4) : 0.2);
-
-    // Upgrade ticks visibility
-    for (let w in this.ticks) {
-      this.ticks[w].forEach(t => {
-        const show = (w === this.activeWeapon || w === "health") && GameData.upgrades[w].includes(t.upgradeKey);
-        t.setVisible(show);
-      });
-    }
   }
 
   _createHUD() {
@@ -336,7 +293,7 @@ export default class RespawnScene extends Phaser.Scene {
     box2.fillRoundedRect(1060, 20, 130, 35, 10);
     this.pointsText = this.add.text(1080, 28, GameData.points, { fontSize: "18px", color: "#fff" });
 
-    // ❤️ Hearts for lives left
+    // ❤️ lives (respawns)
     this.respawnHearts = [];
     for (let i = 0; i < GameData.respawns; i++) {
       const heart = this.add.image(700 + i * 40, 40, "heart").setScale(1);
@@ -346,14 +303,29 @@ export default class RespawnScene extends Phaser.Scene {
 
   _createHelp() {
     this.helpBtn = this.add.text(30, 350, "?", {
-      fontSize: "32px", color: "#fff", fontStyle: "bold", backgroundColor: "#000"
+      fontSize: "32px", color: "#fff", fontStyle: "bold", backgroundColor: "#3d0101ff"
     }).setPadding(10).setInteractive().setOrigin(0.5);
 
     this.helpPopup = this.add.rectangle(640, 360, 600, 400, 0x000000, 0.85).setVisible(false);
     this.helpText = this.add.text(380, 200,
-      "How it works:\n\n- Buy Arrow/Bazooka to unlock upgrades\n- Each weapon upgrades independently\n- Each level stacks, Max unlocks all\n- Hearts increase health up to 6",
-      { fontSize: "20px", color: "#fff", wordWrap: { width: 560 } }
-    ).setVisible(false);
+  "Respawn Shop Guide:\n\n" +
+  "- Earn coins by defeating zombies\n" +
+  "- Unlock new weapons:\n" +
+  "   • Arrow (500 coins)\n" +
+  "   • Bazooka (1000 coins)\n" +
+  "- Buy upgrades for each weapon\n" +
+  "- Each upgrade improves ammo, reload speed or damage\n" +
+  "- Health upgrades increase max hearts (up to 6)\n" +
+  "- Upgrades stack and stay active across lives\n" +
+  "- Choose wisely before you respawn!",
+  {
+    fontSize: "20px",
+    color: "#ffffff",
+    fontFamily: "Montserrat",
+    wordWrap: { width: 560 }
+  }
+).setVisible(false);
+
 
     this.helpBtn.on("pointerdown", () => {
       let v = !this.helpPopup.visible;

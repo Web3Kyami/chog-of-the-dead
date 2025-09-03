@@ -1,3 +1,23 @@
+export function resetRun() {
+  GameData.coins = 5000;
+  GameData.points = 0;
+  GameData.respawns = 3;
+
+  GameData.ownedWeapons = { ak: true, arrow: false, bazooka: false };
+  GameData.activeWeapon = "ak";
+  GameData.upgrades = { ak: [], arrow: [], bazooka: [], health: [] };
+  GameData.maxHealth = 3;
+
+  GameData._runActive = false;
+  GameData._scoreRecorded = false;
+}
+
+export function startRun() {
+  GameData._runActive = true;
+  GameData._scoreRecorded = false;
+}
+
+
 const GameData = {
   coins: 5000,
   points: 0,
@@ -18,18 +38,14 @@ const GameData = {
     if (!this.upgrades[weapon]) this.upgrades[weapon] = [];
     if (!this.upgrades[weapon].includes(key)) this.upgrades[weapon].push(key);
   },
+  _runActive: false,
+  _scoreRecorded: false,
 
-  // --- UI extras ---
-  highScore: 0,
-  leaderboard: [
-    { username: "Alice", score: 1200 },
-    { username: "Bob", score: 950 },
-    { username: "Chog", score: 500 },
-  ],
   user: {
     wallet: null,
     username: null,
     loggedIn: false,
   }
+
 };
 export default GameData;
