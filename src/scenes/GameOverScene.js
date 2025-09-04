@@ -67,20 +67,20 @@ export default class GameOverScene extends Phaser.Scene {
 })();
 
 
-    const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
-    restartBtn.on("pointerdown", () => {
-      resetRun();
-  saveGameData();
-  startRun();
-      this.scene.start("LevelOneScene");
-    });
+  const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
+restartBtn.on("pointerdown", () => {
+  resetRun();
+  if (typeof saveGameData === "function") saveGameData();
+  if (typeof startRun === "function") startRun();
+  this.scene.start("LevelOneScene");
+});
 
-    const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
-    backBtn.on("pointerdown", () => {
-      resetRun();
-  saveGameData();
-  startRun();
-      this.scene.start("MainMenuScene");
-    });
+const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
+backBtn.on("pointerdown", () => {
+  resetRun();
+  if (typeof saveGameData === "function") saveGameData();
+  if (typeof startRun === "function") startRun();
+  this.scene.start("MainMenuScene");
+});
   }
 }

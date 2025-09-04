@@ -36,11 +36,11 @@ window.onload = function () {
       GameOverScene,
     ],
     scale: {
-      mode: Phaser.Scale.FIT,          // ✅ scales to fit any screen
-      autoCenter: Phaser.Scale.CENTER_BOTH, // ✅ center on screen
+      mode: Phaser.Scale.FIT,          
+      autoCenter: Phaser.Scale.CENTER_BOTH, 
     },
     render: {
-      pixelArt: true, // ✅ crisp pixels for retro look
+      pixelArt: true, // 
       antialias: false,
     },
   };

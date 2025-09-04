@@ -63,6 +63,7 @@ export default class MainMenuScene extends Phaser.Scene {
   resetRun(); 
 
   this.scene.start("LevelOneScene");
+  saveGameData();
 }, true);
 
     // 🔑 Login button
