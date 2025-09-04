@@ -48,15 +48,15 @@ Goal: Survive as long as possible and set a high score
 
 📸 Screenshots
 
-![MainMenu](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/gameplay1.png)
+![MainMenu](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/mainmenu.png)
 
 
-![GamePlay](assets/readme/gameplay1.png)
+![GamePlay](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/gameplay1.png)
 
-![GamePlay](assets/readme/gameplay2.png)
+![GamePlay](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/gameplay2.png)
 
 
-![RespawnPage](assets/readme/respawn.png)
+![RespawnPage](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/respawn.png)
 
 
 # Disclaimer ⚠️
