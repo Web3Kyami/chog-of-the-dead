@@ -48,7 +48,7 @@ Goal: Survive as long as possible and set a high score
 
 📸 Screenshots
 
-![MainMenu](assets/readme/mainmenu.png)
+![MainMenu](https://github.com/Web3Kyami/chog-of-the-dead/blob/main/public/assets/readme/gameplay1.png)
 
 
 ![GamePlay](assets/readme/gameplay1.png)
