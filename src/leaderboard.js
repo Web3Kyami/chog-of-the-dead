@@ -2,7 +2,7 @@
 import GameData from "./GameData.js";
 import { saveGameData } from "./storage.js";
 
-const API_BASE = "https://monad-games-id-site.vercel.app/api";
+const GAME_ID = "252"; // your unique Monad Game ID
 
 /**
  * Record a single FINAL score locally (top-10). Will only record ONCE per run.
@@ -30,18 +30,35 @@ export function recordScore(username, finalScore) {
  * Fetch global leaderboard (with fallback to local)
  */
 export async function fetchLeaderboard() {
-  try {
-    const res = await fetch(`${API_BASE}/leaderboard`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      return data.map(entry => ({
-        username: entry.username || "Guest",
-        score: Number(entry.score || 0),
-      }));
+  const urls = [
+    `https://monad-games-id-site.vercel.app/api/leaderboard?gameId=${GAME_ID}&sortBy=scores&page=1`,
+    `https://monad-games-id-site.vercel.app/api/leaderboard?page=1&gameId=${GAME_ID}&sortBy=scores`
+  ];
+
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url);
+      const text = await resp.text();
+
+      if (resp.ok && text.trim().startsWith("{")) {
+        const data = JSON.parse(text);
+        const rawEntries = data?.data || [];
+        return rawEntries.map((entry, i) => ({
+          rank: i + 1,
+          username:
+            entry.username ||
+            entry.player ||
+            (entry.walletAddress
+              ? `${entry.walletAddress.slice(0, 6)}...${entry.walletAddress.slice(-4)}`
+              : "Unknown"),
+          score: Number(entry.score || 0),
+        }));
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch global leaderboard:", err);
     }
-  } catch (e) {
-    console.warn("⚠️ Failed to fetch global leaderboard, using local:", e);
   }
+
+  // fallback → local scores
   return GameData.leaderboard || [];
 }
