@@ -249,32 +249,34 @@
         }
 
         const dead = this.player.takeDamage(1);
-  if (dead) {
-    if (GameData.points > (GameData.highScore || 0)) {
-      GameData.highScore = GameData.points;
-    }
-saveGameData();
 
-    // Lose a life
-    GameData.respawns -= 1;
+        if (dead) {
+          if (GameData.points > (GameData.highScore || 0)) {
+            GameData.highScore = GameData.points;
+          }
 
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.stop("UIScene");
+          saveGameData();
 
-      if (GameData.respawns > 0) {
-        // still have lives → respawn
-        this.scene.start("RespawnScene", {
-          coins: GameData.coins,
-          points: GameData.points,
-          respawns: GameData.respawns
-        });
-      } else {
-        // no lives → game over
-        this.scene.start("GameOverScene");
-      }
-    });
-  }
+          const hasRespawn = GameData.respawns > 0;
+
+          this.cameras.main.fadeOut(300, 0, 0, 0);
+          this.cameras.main.once("camerafadeoutcomplete", () => {
+            this.scene.stop("UIScene");
+
+            if (hasRespawn) {
+              GameData.respawns -= 1;
+              saveGameData();
+
+              this.scene.start("RespawnScene", {
+                coins: GameData.coins,
+                points: GameData.points,
+                respawns: GameData.respawns
+              });
+            } else {
+              this.scene.start("GameOverScene");
+            }
+          });
+        }
 
       });
     }
