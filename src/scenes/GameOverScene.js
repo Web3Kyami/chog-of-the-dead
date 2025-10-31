@@ -3,7 +3,7 @@ import GameData from "../GameData.js";
 import { saveGameData } from "../storage.js";
 import { submitScore } from "../auth/onchain.js";
 import { recordScore } from "../leaderboard.js";
-import { resetRun } from "../GameData.js";
+import { resetRun, startRun } from "../GameData.js";
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -18,7 +18,7 @@ export default class GameOverScene extends Phaser.Scene {
 
   create() {
     const finalScore = GameData.points || 0;
-        this.add.image(640, 360, "bg_mainmenu_blur");
+    this.add.image(640, 360, "bg_mainmenu_blur");
 
     this.add.text(640, 200, "GAME OVER", {
       fontSize: "72px",
@@ -45,42 +45,39 @@ export default class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     
-    // ✅ Save + submit async, then reset
+    // ✅ Save + submit async while leaving the run data intact until a button is pressed
     (async () => {
-  recordScore(GameData.user?.username, finalScore);
+      recordScore(GameData.user?.username, finalScore);
 
-  if (GameData.user?.wallet) {
-    try {
-      await submitScore(GameData.user.wallet, finalScore);
-    } catch (err) {
-      console.error("❌ Onchain submit failed:", err);
-    }
-  }
+      if (GameData.user?.wallet) {
+        try {
+          await submitScore(GameData.user.wallet, finalScore);
+        } catch (err) {
+          console.error("❌ Onchain submit failed:", err);
+        }
+      }
 
-  if (finalScore > (GameData.highScore || 0)) {
-    GameData.highScore = finalScore;
-  }
+      if (finalScore > (GameData.highScore || 0)) {
+        GameData.highScore = finalScore;
+      }
 
-  saveGameData();
-  resetRun();       // reset AFTER saving score
-  saveGameData();   // persist reset state
-})();
+      saveGameData();
+    })();
 
+    const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
+    restartBtn.on("pointerdown", () => {
+      resetRun();
+      saveGameData();
+      startRun();
+      this.scene.start("LevelOneScene");
+    });
 
-  const restartBtn = this.add.image(640, 460, "btn_restart").setInteractive({ useHandCursor: true });
-restartBtn.on("pointerdown", () => {
-  resetRun();
-  if (typeof saveGameData === "function") saveGameData();
-  if (typeof startRun === "function") startRun();
-  this.scene.start("LevelOneScene");
-});
-
-const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
-backBtn.on("pointerdown", () => {
-  resetRun();
-  if (typeof saveGameData === "function") saveGameData();
-  if (typeof startRun === "function") startRun();
-  this.scene.start("MainMenuScene");
-});
+    const backBtn = this.add.image(640, 560, "btn_mainnu").setInteractive({ useHandCursor: true });
+    backBtn.on("pointerdown", () => {
+      resetRun();
+      saveGameData();
+      startRun();
+      this.scene.start("MainMenuScene");
+    });
   }
 }

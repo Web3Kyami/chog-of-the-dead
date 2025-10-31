@@ -24,12 +24,13 @@
     GameData.coins  = data?.coins  ?? GameData.coins  ?? 0;
     GameData.points = data?.points ?? GameData.points ?? 0;
 
-    this.killCount    = 0;
-    this.spawnDelay   = 1700;
-    this.bgSpeed      = 1.7;
-    this.isPaused     = false;
-    this.lastBossTime = 0;
-    this.testBoss     = true;
+    this.killCount      = 0;
+    this.spawnDelay     = 1700;
+    this.bgSpeed        = 1.7;
+    this.isPaused       = false;
+    this.lastBossTime   = 0;
+    this.testBoss       = true;
+    this.isHandlingDeath = false;
   }
 
     preload() {
@@ -239,43 +240,15 @@
 
         if (zombie.type === "boss" && noUpgrades) {
           if (zombie.healthBar) zombie.healthBar.destroy();
-          this.scene.stop("UIScene");
-          this.scene.start("RespawnScene", {
-            coins: GameData.coins,
-            points: GameData.points,
-            respawns: GameData.respawns
-          });
+          this.player.takeDamage(this.player.health);
+          this._handlePlayerDeath();
           return;
         }
 
         const dead = this.player.takeDamage(1);
 
         if (dead) {
-          if (GameData.points > (GameData.highScore || 0)) {
-            GameData.highScore = GameData.points;
-          }
-
-          saveGameData();
-
-          const hasRespawn = GameData.respawns > 0;
-
-          this.cameras.main.fadeOut(300, 0, 0, 0);
-          this.cameras.main.once("camerafadeoutcomplete", () => {
-            this.scene.stop("UIScene");
-
-            if (hasRespawn) {
-              GameData.respawns -= 1;
-              saveGameData();
-
-              this.scene.start("RespawnScene", {
-                coins: GameData.coins,
-                points: GameData.points,
-                respawns: GameData.respawns
-              });
-            } else {
-              this.scene.start("GameOverScene");
-            }
-          });
+          this._handlePlayerDeath();
         }
 
       });
@@ -295,6 +268,37 @@
         this.anims.resumeAll();
         this.scene.resume("UIScene");
       }
+    }
+
+    _handlePlayerDeath() {
+      if (this.isHandlingDeath) return;
+      this.isHandlingDeath = true;
+
+      if (GameData.points > (GameData.highScore || 0)) {
+        GameData.highScore = GameData.points;
+      }
+
+      saveGameData();
+
+      const hasRespawn = GameData.respawns > 0;
+
+      this.cameras.main.fadeOut(300, 0, 0, 0);
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        this.scene.stop("UIScene");
+
+        if (hasRespawn) {
+          GameData.respawns -= 1;
+          saveGameData();
+
+          this.scene.start("RespawnScene", {
+            coins: GameData.coins,
+            points: GameData.points,
+            respawns: GameData.respawns
+          });
+        } else {
+          this.scene.start("GameOverScene");
+        }
+      });
     }
 
     spawnZombie() {
