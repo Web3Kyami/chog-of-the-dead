@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import GameData from "../GameData.js";
-import { resetRun } from "../GameData.js";
+import { resetRun, startRun } from "../GameData.js";
 import { saveGameData } from "../storage.js";
 import { submitScore } from "../auth/onchain.js";
 import { loginWithMonadID } from "../auth/privy.js";
@@ -51,20 +51,21 @@ export default class MainMenuScene extends Phaser.Scene {
 
     // ▶️ Play button
     this.createButton(640, 440, "btn_play", () => {
-  if (this.bgm) this.bgm.stop();
+      if (this.bgm) this.bgm.stop();
 
-  if (!GameData.user || !GameData.user.loggedIn) {
-    this.add.text(640, 500, "⚠️ Please log in first!", {
-      fontSize: "18px", color: "#f00"
-    }).setOrigin(0.5);
-    return;
-  }
+      if (!GameData.user || !GameData.user.loggedIn) {
+        this.add.text(640, 500, "⚠️ Please log in first!", {
+          fontSize: "18px", color: "#f00"
+        }).setOrigin(0.5);
+        return;
+      }
 
-  resetRun(); 
+      resetRun();
+      startRun();
 
-  this.scene.start("LevelOneScene");
-  saveGameData();
-}, true);
+      this.scene.start("LevelOneScene");
+      saveGameData();
+    }, true);
 
     // 🔑 Login button
     this.createButton(640, 520, "btn_login", async () => {

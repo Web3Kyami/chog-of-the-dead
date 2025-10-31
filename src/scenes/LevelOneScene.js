@@ -1,16 +1,15 @@
-  import Phaser from "phaser";
-  import GameData from "../GameData.js";
-  import Chog from "../characters/Chog.js";
-  import Zombie from "../enemies/Zombie.js";
-  import { saveGameData } from "../storage.js";
+import Phaser from "phaser";
+import GameData, { startRun } from "../GameData.js";
+import Chog from "../characters/Chog.js";
+import Zombie from "../enemies/Zombie.js";
+import { saveGameData } from "../storage.js";
 
+export default class LevelOneScene extends Phaser.Scene {
+  constructor() {
+    super("LevelOneScene");
+  }
 
-  export default class LevelOneScene extends Phaser.Scene {
-    constructor() {
-      super("LevelOneScene");
-    }
-
-    init(data) {
+  init(data) {
     // Only set to 3 once, if never initialized
     if (GameData.respawns === undefined) {
       GameData.respawns = 3;
@@ -21,16 +20,18 @@
       GameData.respawns = data.respawns;
     }
 
-    GameData.coins  = data?.coins  ?? GameData.coins  ?? 0;
+    GameData.coins = data?.coins ?? GameData.coins ?? 0;
     GameData.points = data?.points ?? GameData.points ?? 0;
 
-    this.killCount      = 0;
-    this.spawnDelay     = 1700;
-    this.bgSpeed        = 1.7;
-    this.isPaused       = false;
-    this.lastBossTime   = 0;
-    this.testBoss       = true;
+    this.killCount = 0;
+    this.spawnDelay = 1700;
+    this.bgSpeed = 1.7;
+    this.isPaused = false;
+    this.lastBossTime = 0;
+    this.testBoss = true;
     this.isHandlingDeath = false;
+
+    startRun();
   }
 
     preload() {

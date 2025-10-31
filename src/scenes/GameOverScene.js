@@ -3,7 +3,7 @@ import GameData from "../GameData.js";
 import { saveGameData } from "../storage.js";
 import { submitScore } from "../auth/onchain.js";
 import { recordScore } from "../leaderboard.js";
-import { resetRun, startRun } from "../GameData.js";
+import { resetRun } from "../GameData.js";
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() {
@@ -68,7 +68,6 @@ export default class GameOverScene extends Phaser.Scene {
     restartBtn.on("pointerdown", () => {
       resetRun();
       saveGameData();
-      startRun();
       this.scene.start("LevelOneScene");
     });
 
@@ -76,7 +75,6 @@ export default class GameOverScene extends Phaser.Scene {
     backBtn.on("pointerdown", () => {
       resetRun();
       saveGameData();
-      startRun();
       this.scene.start("MainMenuScene");
     });
   }
